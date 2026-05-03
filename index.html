@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>태플릭스 - 현재 상영 중</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #141414;
+      color: #fff;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
+      transition: background 0.3s;
+    }
+
+    header.scrolled {
+      background: #141414;
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #e50914;
+      letter-spacing: -1px;
+      text-transform: uppercase;
+      user-select: none;
+    }
+
+    .header-right {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    /* ── 히어로 배너 ── */
+    #hero {
+      position: relative;
+      height: 85vh;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 48px 80px;
+      overflow: hidden;
+      background: #000;
+    }
+
+    #hero-backdrop {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center top;
+      transition: opacity 0.8s ease;
+    }
+
+    #hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to right,
+        rgba(20,20,20,0.85) 0%,
+        rgba(20,20,20,0.3) 50%,
+        transparent 100%
+      ),
+      linear-gradient(
+        to top,
+        rgba(20,20,20,1) 0%,
+        transparent 40%
+      );
+    }
+
+    .hero-info {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+    }
+
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+    }
+
+    .hero-overview {
+      font-size: 1rem;
+      color: #ddd;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .hero-rating {
+      background: #e50914;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .hero-date {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .hero-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.2s;
+    }
+
+    .btn-play {
+      background: #fff;
+      color: #000;
+    }
+
+    .btn-play:hover { opacity: 0.85; }
+
+    /* ── 섹션 ── */
+    #main-content {
+      position: relative;
+      z-index: 2;
+      padding: 0 48px 60px;
+      margin-top: -40px;
+    }
+
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── 그리드 ── */
+    .movie-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    /* ── 카드 ── */
+    .movie-card {
+      position: relative;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      background: #222;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.06);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+      z-index: 10;
+    }
+
+    .movie-card img {
+      width: 100%;
+      aspect-ratio: 2/3;
+      object-fit: cover;
+      display: block;
+    }
+
+    .movie-card .no-poster {
+      width: 100%;
+      aspect-ratio: 2/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2a2a2a;
+      color: #555;
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 8px;
+    }
+
+    .movie-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 40px 10px 12px;
+      background: linear-gradient(to top, rgba(0,0,0,0.95) 60%, transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .movie-card:hover .movie-info {
+      opacity: 1;
+    }
+
+    .movie-card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .movie-card-rating {
+      display: inline-block;
+      background: #e50914;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    /* ── 로딩 & 에러 ── */
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 40vh;
+      gap: 20px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #333;
+      border-top-color: #e50914;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #error-msg {
+      display: none;
+      text-align: center;
+      padding: 80px 40px;
+      color: #aaa;
+    }
+
+    #error-msg h2 { color: #e50914; margin-bottom: 12px; }
+
+    /* ── 모달 ── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #modal-overlay.open {
+      display: flex;
+    }
+
+    #modal {
+      background: #181818;
+      border-radius: 10px;
+      width: min(90vw, 700px);
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    #modal-backdrop {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      border-radius: 10px 10px 0 0;
+      display: block;
+      background: #111;
+    }
+
+    #modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(0,0,0,0.7);
+      border: none;
+      color: #fff;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #modal-close:hover { background: #e50914; }
+
+    #modal-body {
+      padding: 24px 28px 32px;
+    }
+
+    #modal-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    #modal-meta {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: #aaa;
+      flex-wrap: wrap;
+    }
+
+    #modal-meta span { color: #fff; }
+    #modal-meta .tag {
+      background: #e50914;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    #modal-overview {
+      font-size: 0.95rem;
+      color: #ccc;
+      line-height: 1.7;
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 768px) {
+      header { padding: 14px 20px; }
+      .logo { font-size: 1.4rem; }
+      #hero { padding: 0 20px 60px; height: 70vh; }
+      .hero-title { font-size: 1.8rem; }
+      #main-content { padding: 0 16px 40px; }
+      .movie-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<header id="header">
+  <div class="logo">태플릭스</div>
+  <div class="header-right">현재 상영 중</div>
+</header>
+
+<!-- 히어로 배너 -->
+<section id="hero">
+  <div id="hero-backdrop"></div>
+  <div class="hero-info">
+    <div class="hero-title" id="hero-title">로딩 중...</div>
+    <div class="hero-meta">
+      <span class="hero-rating" id="hero-rating"></span>
+      <span class="hero-date" id="hero-date"></span>
+    </div>
+    <div class="hero-overview" id="hero-overview"></div>
+    <button class="hero-btn btn-play" id="hero-btn">▶ 자세히 보기</button>
+  </div>
+</section>
+
+<!-- 영화 그리드 -->
+<main id="main-content">
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>영화를 불러오는 중...</p>
+  </div>
+  <div id="error-msg">
+    <h2>오류가 발생했습니다</h2>
+    <p id="error-detail"></p>
+  </div>
+  <div id="movies-section" style="display:none">
+    <div class="section-title">현재 상영 중인 영화</div>
+    <div class="movie-grid" id="movie-grid"></div>
+  </div>
+</main>
+
+<!-- 모달 -->
+<div id="modal-overlay">
+  <div id="modal">
+    <img id="modal-backdrop" src="" alt="" />
+    <button id="modal-close">✕</button>
+    <div id="modal-body">
+      <div id="modal-title"></div>
+      <div id="modal-meta"></div>
+      <div id="modal-overview"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_KEY  = '1e07b344b9981c152cdeed9f1a185c9d';
+  const BASE_URL = 'https://api.themoviedb.org/3';
+  const IMG_W500 = 'https://image.tmdb.org/t/p/w500';
+  const IMG_ORIG = 'https://image.tmdb.org/t/p/original';
+
+  let movies = [];
+  let heroMovie = null;
+
+  /* ── 유틸 ── */
+  function fmt(score) { return score ? `★ ${score.toFixed(1)}` : ''; }
+  function fmtDate(d) { return d ? d.replace(/-/g, '.') : ''; }
+
+  /* ── 헤더 스크롤 효과 ── */
+  window.addEventListener('scroll', () => {
+    document.getElementById('header').classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  /* ── API 호출 ── */
+  async function fetchMovies() {
+    const url = `${BASE_URL}/movie/now_playing?api_key=${API_KEY}&language=ko-KR&page=1`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.results || [];
+  }
+
+  /* ── 히어로 설정 ── */
+  function setHero(movie) {
+    heroMovie = movie;
+    const backdrop = document.getElementById('hero-backdrop');
+    if (movie.backdrop_path) {
+      backdrop.style.backgroundImage = `url(${IMG_ORIG}${movie.backdrop_path})`;
+    }
+    document.getElementById('hero-title').textContent  = movie.title || movie.original_title;
+    document.getElementById('hero-overview').textContent = movie.overview || '줄거리 정보 없음';
+    document.getElementById('hero-rating').textContent  = fmt(movie.vote_average);
+    document.getElementById('hero-date').textContent   = fmtDate(movie.release_date);
+    document.getElementById('hero-btn').onclick = () => openModal(movie);
+  }
+
+  /* ── 카드 렌더 ── */
+  function renderCards(list) {
+    const grid = document.getElementById('movie-grid');
+    grid.innerHTML = '';
+    list.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'movie-card';
+      card.innerHTML = m.poster_path
+        ? `<img src="${IMG_W500}${m.poster_path}" alt="${m.title}" loading="lazy" />`
+        : `<div class="no-poster">${m.title}</div>`;
+      card.innerHTML += `
+        <div class="movie-info">
+          <div class="movie-card-title">${m.title || m.original_title}</div>
+          ${m.vote_average ? `<span class="movie-card-rating">${fmt(m.vote_average)}</span>` : ''}
+        </div>`;
+      card.addEventListener('click', () => openModal(m));
+      grid.appendChild(card);
+    });
+  }
+
+  /* ── 모달 ── */
+  function openModal(m) {
+    document.getElementById('modal-backdrop').src =
+      m.backdrop_path ? `${IMG_ORIG}${m.backdrop_path}` : '';
+    document.getElementById('modal-title').textContent = m.title || m.original_title;
+    document.getElementById('modal-overview').textContent = m.overview || '줄거리 정보 없음';
+    document.getElementById('modal-meta').innerHTML = `
+      ${m.vote_average ? `<span class="tag">${fmt(m.vote_average)}</span>` : ''}
+      ${m.release_date ? `<span>개봉일: <span>${fmtDate(m.release_date)}</span></span>` : ''}
+      ${m.original_title && m.original_title !== m.title
+        ? `<span>원제: <span>${m.original_title}</span></span>` : ''}
+    `;
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  /* ── 초기화 ── */
+  async function init() {
+    try {
+      movies = await fetchMovies();
+      if (!movies.length) throw new Error('영화 데이터가 없습니다.');
+
+      /* 배경이 있는 영화를 히어로로 우선 선택 */
+      const withBackdrop = movies.filter(m => m.backdrop_path && m.overview);
+      setHero(withBackdrop.length ? withBackdrop[0] : movies[0]);
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('movies-section').style.display = 'block';
+      renderCards(movies);
+    } catch (err) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error-msg').style.display = 'block';
+      document.getElementById('error-detail').textContent = err.message;
+      console.error(err);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
